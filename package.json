@@ -1,0 +1,18 @@
+{
+  "name": "thunderVip",
+  "version": "1.0.0",
+  "description": "����һ���򵥵�VIP���湤�ߣ���׽Ѹ�ס��ſᡢ�����ջ������ӻ�Ա",
+  "main": "index.js",
+  "dependencies": {
+    "cheerio": "^0.20.0",
+    "co": "^4.6.0",
+    "colors": "^1.1.2",
+    "commander": "^2.9.0",
+    "optimist": "^0.6.1",
+    "request": "^2.69.0",
+    "thunkify": "^2.1.2"
+  },
+  "devDependencies": {},
+  "author": "toreant",
+  "license": "MIT"
+}
