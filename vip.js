@@ -50,40 +50,35 @@ function crawler(url,num,type) {
 }
 
 function getVip($,type,num) {
-    var result = [];
+    var result = result = getBaseData($,type);
 
     if(type === 'thunder') {
-        result = getThunderData($,num);
         console.log("\n>迅雷会员vip".cyan + '\n');
     } else if(type === 'youku') {
-        result = getYoukuData($,num);
         console.log("\n>优酷会员vip".cyan + '\n');
     } else if(type === 'letv') {
-        result = getYoukuData($,num);
         console.log("\n>乐视会员vip".cyan + '\n');
     } else if(type == 'iqiyi') {
-        result = getYoukuData($,num);
         console.log("\n>爱奇艺会员vip".cyan + '\n');
     }
 
-    for(var i = 0, len = result.length; i < len; i++) {
+    for(var i = 0; i < num; i++) {
+        if(result.length === 0) {
+            console.log('No Data'.grey);
+            break;
+        }
         console.log(("账号："+result[i].count).green + "  --  " + result[i].password.gray);
     }
 }
 
-function getThunderData($,num) {
-    var vip = $(".t_fsz .t_f").eq(0);
-    var items = [];
+function getBaseData($,type) {
+    var vip;
+    if(type === 'thunder') {
+        vip = $(".t_fsz .t_f").eq(0);
+    } else {
+        vip = $(".t_table td").slice(0);
+    }
 
-    vip.each(function(index,item) {
-        var children = $(this)[0].children;
-        items = items.concat(getData(children));
-    });
-    return items;
-}
-
-function getYoukuData($,num) {
-    var vip = $(".t_table td").slice(0);
     var items = [];
 
     vip.each(function(index,element) {
