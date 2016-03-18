@@ -4,60 +4,71 @@
 var cheerio = require('cheerio');
 var request = require('request');
 var colors = require('colors');
+var co = require('co');
+var thunkify = require('thunkify');
+var get = thunkify(request.get);
 var baseUrl = 'http://www.aiqiyivip.com/';
 
 function crawler(url,num,type) {
-    request(url,function(err,res,body) {
-        
-        if(err) {
-            console.log(e.message.red);
-            return;
-        }
-        
-        var $ = cheerio.load(body);
-        var selector = "#threadlisttableid tbody",
-            num = 0;
-
-        // 查询器，查找会员分享账号链接的
-        if(type === 'iqiyi') {
-            num = 7;
-        } else {
-            num = 5;
-        }
-        var a = $(selector).eq(num).find(".sub-tit").children('a').eq(1);
-        console.log(a.attr('href'));
-        if(!a.attr('href')) {
-        	console.log('爬不了'.red);
-        	return;
-        }
-
-        request(a.attr('href'),function(err,res,body) {
-            if(err) {
-                console.log(e.message.red);
-            }
-            $ = cheerio.load(body);
-
-            var result = [];
-
-            if(type === 'thunder') {
-                result = getThunderData($,num);
-                console.log("\n>迅雷会员vip".red + '\n');
-            } else if(type === 'youku') {
-                result = getYoukuData($,num);
-                console.log("\n>优酷会员vip".red + '\n');
-            } else if(type === 'letv') {
-                result = getYoukuData($,num);
-                console.log("\n>乐视会员vip".red + '\n');
-            } else if(type == 'iqiyi') {
-                result = getYoukuData($,num);
-                console.log("\n>爱奇艺会员vip".red + '\n');
+    co(function *() {
+            try {
+                var firstPage = yield get(url);
+            } catch(ex) {
+                console.log(ex.message.red);
+                return;
             }
 
-            for(var i = 0, len = result.length; i < len; i++) {
-                console.log(("账号："+result[i].count).green + "  --  " + result[i].password.gray);
+            var $ = cheerio.load(firstPage[0].body);
+            var selector = "#threadlisttableid tbody",
+                _num = 0;
+
+            // 查询器，查找会员分享账号链接的
+            if(type === 'iqiyi') {
+                _num = 7;
+            } else {
+                _num = 5;
             }
-        });
+            var a = $(selector).eq(_num).find(".sub-tit").children('a').eq(1);
+
+            if(!a.attr('href')) {
+                console.log('抓不了数据'.red);
+                return;
+            }
+
+            var mainBody = yield get(a.attr('href'));
+            $ = cheerio.load(mainBody[0].body);
+            return Promise.resolve($);
+        }
+    ).then(function(data) {
+            if(!data) {
+                throw new Error('no data');
+            }
+            getVip(data,type,num);
+    }).catch((ex) => {
+            console.log(ex.message.red);
     });
+}
+
+function getVip($,type,num) {
+    var result = [];
+
+    if(type === 'thunder') {
+        result = getThunderData($,num);
+        console.log("\n>迅雷会员vip".cyan + '\n');
+    } else if(type === 'youku') {
+        result = getYoukuData($,num);
+        console.log("\n>优酷会员vip".cyan + '\n');
+    } else if(type === 'letv') {
+        result = getYoukuData($,num);
+        console.log("\n>乐视会员vip".cyan + '\n');
+    } else if(type == 'iqiyi') {
+        result = getYoukuData($,num);
+        console.log("\n>爱奇艺会员vip".cyan + '\n');
+    }
+
+    for(var i = 0, len = result.length; i < len; i++) {
+        console.log(("账号："+result[i].count).green + "  --  " + result[i].password.gray);
+    }
 }
 
 function getThunderData($,num) {
@@ -86,19 +97,19 @@ function getData(childrenData) {
     var items = [];
 
     for(var i = 0, num = childrenData.length; i < num; i++) {
-       
+
         var item = {};
         if(childrenData[i].type === 'text' || childrenData[i].data ) {
             var result = childrenData[i].data.toString().match(/[\w@\.\w\:]+/g);
             if(!result || result.length < 2) {
                 continue;
             }
-            
+
             item.count = result[0];
             item.password = result[1];
             items.push(item);
-         } else if(childrenData[i].type === 'tag' && childrenData[i].name === 'a') {
-            
+        } else if(childrenData[i].type === 'tag' && childrenData[i].name === 'a') {
+
             item.count = childrenData[i].children[0].data;
             item.password = childrenData[i].next.data.match(/[\w@\.\w\:]+/g)[0];
             items.push(item);
