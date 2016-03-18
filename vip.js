@@ -8,6 +8,12 @@ var baseUrl = 'http://www.aiqiyivip.com/';
 
 function crawler(url,num,type) {
     request(url,function(err,res,body) {
+        
+        if(err) {
+            console.log(e.message.red);
+            return;
+        }
+        
         var $ = cheerio.load(body);
         var selector = "#threadlisttableid tbody",
             num = 0;
@@ -20,8 +26,15 @@ function crawler(url,num,type) {
         }
         var a = $(selector).eq(num).find(".sub-tit").children('a').eq(1);
         console.log(a.attr('href'));
+        if(!a.attr('href')) {
+        	console.log('爬不了'.red);
+        	return;
+        }
 
         request(a.attr('href'),function(err,res,body) {
+            if(err) {
+                console.log(e.message.red);
+            }
             $ = cheerio.load(body);
 
             var result = [];
@@ -73,15 +86,23 @@ function getData(childrenData) {
     var items = [];
 
     for(var i = 0, num = childrenData.length; i < num; i++) {
+       
+        var item = {};
         if(childrenData[i].type === 'text' || childrenData[i].data ) {
             var result = childrenData[i].data.toString().match(/[\w@\.\w\:]+/g);
             if(!result || result.length < 2) {
                 continue;
             }
-            var item = {};
+            
             item.count = result[0];
             item.password = result[1];
             items.push(item);
+         } else if(childrenData[i].type === 'tag' && childrenData[i].name === 'a') {
+            
+            item.count = childrenData[i].children[0].data;
+            item.password = childrenData[i].next.data.match(/[\w@\.\w\:]+/g)[0];
+            items.push(item);
+            i++;
         }
     }
     return items;
